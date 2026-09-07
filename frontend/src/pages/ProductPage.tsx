@@ -222,7 +222,7 @@ export function ProductPage() {
         </h2>
 
         <p className="mb-4 mt-1 text-xs text-gray-500">
-          Select your preferred colour and storage.
+          Select your preferred product configuration.
         </p>
 
         <VariantSelector

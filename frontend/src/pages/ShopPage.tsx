@@ -24,7 +24,9 @@ const getLowestPrice = (product: Product): number => {
 const getLowestEmi = (product: Product): number => {
   return Math.min(
     ...product.variants.flatMap((variant) =>
-      variant.emiPlans.map((plan) => plan.monthlyPayment),
+      variant.emiPlans.map(
+        (plan) => plan.monthlyPayment,
+      ),
     ),
   );
 };
@@ -35,7 +37,12 @@ export function ShopPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedBrand, setSelectedBrand] = useState("all");
+
+  const [selectedCategory, setSelectedCategory] =
+    useState("all");
+
+  const [selectedBrand, setSelectedBrand] =
+    useState("all");
 
   const [sortOption, setSortOption] =
     useState<SortOption>("featured");
@@ -49,31 +56,61 @@ export function ShopPage() {
     search: searchQuery || undefined,
   });
 
-  const brands = useMemo(() => {
+  const categories = useMemo(() => {
     return Array.from(
-      new Set(products?.map((product) => product.brand) ?? []),
+      new Set(
+        products?.map((product) => product.category) ??
+          [],
+      ),
     ).sort();
   }, [products]);
 
-  const visibleProducts = useMemo(() => {
-    const filtered =
-      selectedBrand === "all"
-        ? [...(products ?? [])]
+  const brands = useMemo(() => {
+    const categoryProducts =
+      selectedCategory === "all"
+        ? products ?? []
         : (products ?? []).filter(
-            (product) => product.brand === selectedBrand,
+            (product) =>
+              product.category === selectedCategory,
           );
+
+    return Array.from(
+      new Set(
+        categoryProducts.map(
+          (product) => product.brand,
+        ),
+      ),
+    ).sort();
+  }, [products, selectedCategory]);
+
+  const visibleProducts = useMemo(() => {
+    const filtered = (products ?? []).filter(
+      (product) => {
+        const matchesCategory =
+          selectedCategory === "all" ||
+          product.category === selectedCategory;
+
+        const matchesBrand =
+          selectedBrand === "all" ||
+          product.brand === selectedBrand;
+
+        return matchesCategory && matchesBrand;
+      },
+    );
 
     if (sortOption === "price-low") {
       filtered.sort(
         (first, second) =>
-          getLowestPrice(first) - getLowestPrice(second),
+          getLowestPrice(first) -
+          getLowestPrice(second),
       );
     }
 
     if (sortOption === "price-high") {
       filtered.sort(
         (first, second) =>
-          getLowestPrice(second) - getLowestPrice(first),
+          getLowestPrice(second) -
+          getLowestPrice(first),
       );
     }
 
@@ -85,27 +122,50 @@ export function ShopPage() {
     }
 
     return filtered;
-  }, [products, selectedBrand, sortOption]);
+  }, [
+    products,
+    selectedCategory,
+    selectedBrand,
+    sortOption,
+  ]);
 
   const handleSearch = (
     event: FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
+
+    setSelectedCategory("all");
     setSelectedBrand("all");
     setSearchQuery(searchInput.trim());
+  };
+
+  const handleCategoryChange = (
+    category: string,
+  ) => {
+    setSelectedCategory(category);
+    setSelectedBrand("all");
   };
 
   const clearSearch = () => {
     setSearchInput("");
     setSearchQuery("");
+    setSelectedCategory("all");
     setSelectedBrand("all");
   };
 
   const resetFilters = () => {
+    setSearchInput("");
+    setSearchQuery("");
+    setSelectedCategory("all");
     setSelectedBrand("all");
     setSortOption("featured");
-    clearSearch();
   };
+
+  const hasActiveFilters =
+    Boolean(searchQuery) ||
+    selectedCategory !== "all" ||
+    selectedBrand !== "all" ||
+    sortOption !== "featured";
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-[#f6f6f7] pb-28 shadow-sm">
@@ -170,9 +230,12 @@ export function ShopPage() {
 
           {!isLoading && !isError && products && (
             <MarketplaceFilters
+              categories={categories}
               brands={brands}
+              selectedCategory={selectedCategory}
               selectedBrand={selectedBrand}
               sortOption={sortOption}
+              onCategoryChange={handleCategoryChange}
               onBrandChange={setSelectedBrand}
               onSortChange={setSortOption}
             />
@@ -187,9 +250,7 @@ export function ShopPage() {
                   : "products"}
               </p>
 
-              {(searchQuery ||
-                selectedBrand !== "all" ||
-                sortOption !== "featured") && (
+              {hasActiveFilters && (
                 <button
                   type="button"
                   onClick={resetFilters}
@@ -267,7 +328,9 @@ export function ShopPage() {
 
       {activeTab === "brands" && (
         <section className="px-5 pt-7">
-          <h1 className="text-xl font-bold">Top Brands</h1>
+          <h1 className="text-xl font-bold">
+            Top Brands
+          </h1>
         </section>
       )}
 
