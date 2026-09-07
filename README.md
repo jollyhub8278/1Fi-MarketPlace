@@ -231,6 +231,18 @@ GET /products/unknown-product
 
 Returns HTTP `404` with an error response.
 
+## API Testing
+
+The REST API was manually tested using Postman to verify successful responses, query handling and error states.
+
+Tested scenarios include:
+
+- API health check
+- Retrieving all products
+- Searching products using query parameters
+- Retrieving a product by slug
+- Handling an unknown product with a `404` response
+
 ## Database Schema
 
 ### Product
