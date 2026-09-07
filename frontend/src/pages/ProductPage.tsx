@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -10,22 +10,24 @@ import { Link, useParams } from "react-router-dom";
 import { EmiPlanSelector } from "../components/shop/EmiPlanSelector";
 import { VariantSelector } from "../components/shop/VariantSelector";
 import { useProduct } from "../hooks/useProducts";
-import type {
-  EmiPlan,
-  ProductVariant,
-} from "../types/product";
+import type { ProductVariant } from "../types/product";
 import { formatCurrency } from "../utils/currency";
 
 export function ProductPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { data: product, isLoading, isError, refetch } =
-    useProduct(slug);
 
-  const [selectedVariant, setSelectedVariant] =
-    useState<ProductVariant | null>(null);
+  const {
+    data: product,
+    isLoading,
+    isError,
+    refetch,
+  } = useProduct(slug);
 
-  const [selectedPlan, setSelectedPlan] =
-    useState<EmiPlan | null>(null);
+  const [selectedVariantId, setSelectedVariantId] =
+    useState("");
+
+  const [selectedPlanId, setSelectedPlanId] =
+    useState("");
 
   const [selectedImageIndex, setSelectedImageIndex] =
     useState(0);
@@ -33,21 +35,25 @@ export function ProductPage() {
   const [showConfirmation, setShowConfirmation] =
     useState(false);
 
-  useEffect(() => {
-    if (!product) return;
+  const selectedVariant =
+    product?.variants.find(
+      (variant) => variant._id === selectedVariantId,
+    ) ??
+    product?.variants[0] ??
+    null;
 
-    const firstVariant = product.variants[0];
-
-    setSelectedVariant(firstVariant);
-    setSelectedPlan(firstVariant?.emiPlans[0] ?? null);
-    setSelectedImageIndex(0);
-  }, [product]);
+  const selectedPlan =
+    selectedVariant?.emiPlans.find(
+      (plan) => plan._id === selectedPlanId,
+    ) ??
+    selectedVariant?.emiPlans[0] ??
+    null;
 
   const handleVariantSelect = (
     variant: ProductVariant,
   ) => {
-    setSelectedVariant(variant);
-    setSelectedPlan(variant.emiPlans[0] ?? null);
+    setSelectedVariantId(variant._id);
+    setSelectedPlanId("");
     setSelectedImageIndex(0);
   };
 
@@ -99,11 +105,15 @@ export function ProductPage() {
     selectedVariant.images[selectedImageIndex] ??
     selectedVariant.images[0];
 
-  const discount = Math.round(
-    ((selectedVariant.mrp - selectedVariant.price) /
-      selectedVariant.mrp) *
-      100,
-  );
+  const discount =
+    selectedVariant.mrp > 0
+      ? Math.round(
+          ((selectedVariant.mrp -
+            selectedVariant.price) /
+            selectedVariant.mrp) *
+            100,
+        )
+      : 0;
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-[#f6f6f7] pb-28">
@@ -120,6 +130,7 @@ export function ProductPage() {
           <p className="text-xs text-gray-500">
             1Fi Marketplace
           </p>
+
           <p className="max-w-[280px] truncate text-sm font-semibold">
             {product.name}
           </p>
@@ -143,24 +154,32 @@ export function ProductPage() {
 
         {selectedVariant.images.length > 1 && (
           <div className="mt-3 flex gap-2 overflow-x-auto">
-            {selectedVariant.images.map((image, index) => (
-              <button
-                key={`${image}-${index}`}
-                type="button"
-                onClick={() => setSelectedImageIndex(index)}
-                className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border ${
-                  selectedImageIndex === index
-                    ? "border-[#712cdc]"
-                    : "border-gray-200"
-                }`}
-              >
-                <img
-                  src={image}
-                  alt={`${product.name} view ${index + 1}`}
-                  className="h-full w-full object-contain"
-                />
-              </button>
-            ))}
+            {selectedVariant.images.map(
+              (image, index) => (
+                <button
+                  key={`${image}-${index}`}
+                  type="button"
+                  aria-label={`Show product image ${index + 1}`}
+                  aria-pressed={
+                    selectedImageIndex === index
+                  }
+                  onClick={() =>
+                    setSelectedImageIndex(index)
+                  }
+                  className={`h-16 w-16 shrink-0 overflow-hidden rounded-xl border ${
+                    selectedImageIndex === index
+                      ? "border-[#712cdc]"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <img
+                    src={image}
+                    alt={`${product.name} view ${index + 1}`}
+                    className="h-full w-full object-contain"
+                  />
+                </button>
+              ),
+            )}
           </div>
         )}
       </section>
@@ -191,7 +210,8 @@ export function ProductPage() {
         <p className="mt-1 text-xs font-medium text-green-600">
           You save{" "}
           {formatCurrency(
-            selectedVariant.mrp - selectedVariant.price,
+            selectedVariant.mrp -
+              selectedVariant.price,
           )}
         </p>
       </section>
@@ -219,7 +239,8 @@ export function ProductPage() {
           </h2>
 
           <p className="mt-1 text-xs text-gray-500">
-            Select a payment plan backed by your mutual funds.
+            Select a payment plan backed by your mutual
+            funds.
           </p>
         </div>
 
@@ -230,7 +251,9 @@ export function ProductPage() {
             </p>
 
             <p className="mt-1 text-xl font-bold text-[#712cdc]">
-              {formatCurrency(selectedPlan.downPayment)}
+              {formatCurrency(
+                selectedPlan.downPayment,
+              )}
             </p>
           </div>
         )}
@@ -238,7 +261,9 @@ export function ProductPage() {
         <EmiPlanSelector
           plans={selectedVariant.emiPlans}
           selectedPlanId={selectedPlan?._id ?? ""}
-          onSelect={setSelectedPlan}
+          onSelect={(plan) =>
+            setSelectedPlanId(plan._id)
+          }
         />
       </section>
 
@@ -254,7 +279,10 @@ export function ProductPage() {
                 key={label}
                 className="grid grid-cols-2 gap-4 py-3 text-sm"
               >
-                <dt className="text-gray-500">{label}</dt>
+                <dt className="text-gray-500">
+                  {label}
+                </dt>
+
                 <dd className="text-right font-medium text-gray-900">
                   {value}
                 </dd>
@@ -274,8 +302,10 @@ export function ProductPage() {
           <p className="text-sm font-semibold">
             Secure EMI with 1Fi
           </p>
+
           <p className="mt-1 text-xs leading-5 text-gray-500">
-            Your EMI is backed by your mutual fund investments.
+            Your EMI is backed by your mutual fund
+            investments.
           </p>
         </div>
       </section>
@@ -297,8 +327,13 @@ export function ProductPage() {
 
         <button
           type="button"
-          disabled={!selectedPlan || selectedVariant.stock === 0}
-          onClick={() => setShowConfirmation(true)}
+          disabled={
+            !selectedPlan ||
+            selectedVariant.stock === 0
+          }
+          onClick={() =>
+            setShowConfirmation(true)
+          }
           className="rounded-xl bg-[#712cdc] px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:bg-gray-300"
         >
           Proceed
@@ -317,7 +352,9 @@ export function ProductPage() {
               <button
                 type="button"
                 aria-label="Close confirmation"
-                onClick={() => setShowConfirmation(false)}
+                onClick={() =>
+                  setShowConfirmation(false)
+                }
                 className="grid h-9 w-9 place-items-center rounded-full bg-gray-100"
               >
                 <X size={18} />
@@ -337,8 +374,9 @@ export function ProductPage() {
             </h2>
 
             <p className="mt-2 text-center text-sm text-gray-500">
-              You selected the {selectedPlan.tenureMonths}-month
-              EMI plan for {product.name}.
+              You selected the{" "}
+              {selectedPlan.tenureMonths}-month EMI plan
+              for {product.name}.
             </p>
 
             <div className="mt-5 rounded-2xl bg-[#f5efff] p-4">
@@ -346,6 +384,7 @@ export function ProductPage() {
                 <span className="text-gray-500">
                   Monthly payment
                 </span>
+
                 <span className="font-bold">
                   {formatCurrency(
                     selectedPlan.monthlyPayment,
@@ -357,8 +396,11 @@ export function ProductPage() {
                 <span className="text-gray-500">
                   Down payment
                 </span>
+
                 <span className="font-bold">
-                  {formatCurrency(selectedPlan.downPayment)}
+                  {formatCurrency(
+                    selectedPlan.downPayment,
+                  )}
                 </span>
               </div>
 
@@ -366,6 +408,7 @@ export function ProductPage() {
                 <span className="text-gray-500">
                   Interest
                 </span>
+
                 <span className="font-bold">
                   {selectedPlan.interestRate}%
                 </span>
@@ -374,7 +417,9 @@ export function ProductPage() {
 
             <button
               type="button"
-              onClick={() => setShowConfirmation(false)}
+              onClick={() =>
+                setShowConfirmation(false)
+              }
               className="mt-5 w-full rounded-xl bg-[#712cdc] py-3.5 text-sm font-bold text-white"
             >
               Done
