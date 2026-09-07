@@ -4,12 +4,14 @@
   "description": "REST API for the 1Fi Marketplace",
   "main": "dist/server.js",
   "private": true,
-"scripts": {
-  "dev": "tsx watch src/server.ts",
-  "build": "tsc",
-  "start": "node dist/server.js",
-  "seed": "tsx src/database/seed.ts"
-},
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "seed": "tsx src/database/seed.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -28,7 +30,10 @@
     "@types/express": "^5.0.6",
     "@types/morgan": "^1.9.10",
     "@types/node": "^26.4.1",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.2.2",
     "tsx": "^4.23.13",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
   }
 }
