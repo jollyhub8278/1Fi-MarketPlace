@@ -1,11 +1,33 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 import { BottomNavigation } from "../components/layout/BottomNavigation";
-import { ShopTabs, type ShopTab,} from "../components/shop/ShopTabs";
+import {
+  MarketplaceFilters,
+  type SortOption,
+} from "../components/shop/MarketPlaceFilters";
 import { ProductCard } from "../components/shop/ProductCard";
+import {
+  ShopTabs,
+  type ShopTab,
+} from "../components/shop/ShopTabs";
 import { useProducts } from "../hooks/useProducts";
+import type { Product } from "../types/product";
+
+const getLowestPrice = (product: Product): number => {
+  return Math.min(
+    ...product.variants.map((variant) => variant.price),
+  );
+};
+
+const getLowestEmi = (product: Product): number => {
+  return Math.min(
+    ...product.variants.flatMap((variant) =>
+      variant.emiPlans.map((plan) => plan.monthlyPayment),
+    ),
+  );
+};
 
 export function ShopPage() {
   const [activeTab, setActiveTab] =
@@ -13,6 +35,10 @@ export function ShopPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedBrand, setSelectedBrand] = useState("all");
+
+  const [sortOption, setSortOption] =
+    useState<SortOption>("featured");
 
   const {
     data: products,
@@ -23,9 +49,62 @@ export function ShopPage() {
     search: searchQuery || undefined,
   });
 
-  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+  const brands = useMemo(() => {
+    return Array.from(
+      new Set(products?.map((product) => product.brand) ?? []),
+    ).sort();
+  }, [products]);
+
+  const visibleProducts = useMemo(() => {
+    const filtered =
+      selectedBrand === "all"
+        ? [...(products ?? [])]
+        : (products ?? []).filter(
+            (product) => product.brand === selectedBrand,
+          );
+
+    if (sortOption === "price-low") {
+      filtered.sort(
+        (first, second) =>
+          getLowestPrice(first) - getLowestPrice(second),
+      );
+    }
+
+    if (sortOption === "price-high") {
+      filtered.sort(
+        (first, second) =>
+          getLowestPrice(second) - getLowestPrice(first),
+      );
+    }
+
+    if (sortOption === "emi-low") {
+      filtered.sort(
+        (first, second) =>
+          getLowestEmi(first) - getLowestEmi(second),
+      );
+    }
+
+    return filtered;
+  }, [products, selectedBrand, sortOption]);
+
+  const handleSearch = (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
+    setSelectedBrand("all");
     setSearchQuery(searchInput.trim());
+  };
+
+  const clearSearch = () => {
+    setSearchInput("");
+    setSearchQuery("");
+    setSelectedBrand("all");
+  };
+
+  const resetFilters = () => {
+    setSelectedBrand("all");
+    setSortOption("featured");
+    clearSearch();
   };
 
   return (
@@ -63,26 +142,67 @@ export function ShopPage() {
                 setSearchInput(event.target.value)
               }
               placeholder="Search products..."
+              aria-label="Search Marketplace products"
               className="w-full bg-transparent px-3 py-4 text-sm outline-none placeholder:text-gray-400"
             />
+
+            {searchInput && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={clearSearch}
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-gray-100"
+              >
+                <X size={16} />
+              </button>
+            )}
           </form>
 
-          <div className="mb-4 mt-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-bold text-gray-950">
-                1Fi Marketplace
-              </h1>
+          <div className="mb-4 mt-6">
+            <h1 className="text-xl font-bold text-gray-950">
+              1Fi Marketplace
+            </h1>
 
-              {!isLoading && (
-                <p className="mt-1 text-xs text-gray-500">
-                  {products?.length ?? 0} products available
-                </p>
-              )}
-            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Shop products with flexible EMI plans
+            </p>
           </div>
 
+          {!isLoading && !isError && products && (
+            <MarketplaceFilters
+              brands={brands}
+              selectedBrand={selectedBrand}
+              sortOption={sortOption}
+              onBrandChange={setSelectedBrand}
+              onSortChange={setSortOption}
+            />
+          )}
+
+          {!isLoading && !isError && (
+            <div className="mb-3 mt-5 flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-700">
+                {visibleProducts.length}{" "}
+                {visibleProducts.length === 1
+                  ? "product"
+                  : "products"}
+              </p>
+
+              {(searchQuery ||
+                selectedBrand !== "all" ||
+                sortOption !== "featured") && (
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="text-xs font-semibold text-[#712cdc]"
+                >
+                  Reset filters
+                </button>
+              )}
+            </div>
+          )}
+
           {isLoading && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="mt-5 grid grid-cols-2 gap-3">
               {[1, 2, 3, 4].map((item) => (
                 <div
                   key={item}
@@ -93,7 +213,7 @@ export function ShopPage() {
           )}
 
           {isError && (
-            <div className="rounded-2xl bg-white p-6 text-center">
+            <div className="mt-5 rounded-2xl bg-white p-6 text-center">
               <p className="font-semibold">
                 Unable to load products
               </p>
@@ -108,25 +228,40 @@ export function ShopPage() {
             </div>
           )}
 
-          {!isLoading && !isError && products?.length === 0 && (
-            <div className="rounded-2xl bg-white p-8 text-center">
-              <p className="font-semibold">No products found</p>
-              <p className="mt-1 text-sm text-gray-500">
-                Try searching with another product name.
-              </p>
-            </div>
-          )}
+          {!isLoading &&
+            !isError &&
+            visibleProducts.length === 0 && (
+              <div className="mt-5 rounded-2xl bg-white p-8 text-center">
+                <p className="font-semibold">
+                  No products found
+                </p>
 
-          {!isLoading && !isError && products && (
-            <div className="grid grid-cols-2 gap-3">
-              {products.map((product) => (
-                <ProductCard
-                  key={product._id}
-                  product={product}
-                />
-              ))}
-            </div>
-          )}
+                <p className="mt-1 text-sm text-gray-500">
+                  Try changing your search or filters.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={resetFilters}
+                  className="mt-4 text-sm font-semibold text-[#712cdc]"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            )}
+
+          {!isLoading &&
+            !isError &&
+            visibleProducts.length > 0 && (
+              <div className="grid grid-cols-2 gap-3">
+                {visibleProducts.map((product) => (
+                  <ProductCard
+                    key={product._id}
+                    product={product}
+                  />
+                ))}
+              </div>
+            )}
         </section>
       )}
 
@@ -138,7 +273,9 @@ export function ShopPage() {
 
       {activeTab === "nearby" && (
         <section className="px-5 pt-7">
-          <h1 className="text-xl font-bold">Nearby Stores</h1>
+          <h1 className="text-xl font-bold">
+            Nearby Stores
+          </h1>
         </section>
       )}
 

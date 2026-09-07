@@ -7,7 +7,7 @@ const calculateMonthlyPayment = (
   price: number,
   tenureMonths: number,
   annualInterestRate: number,
-  downPayment: number
+  downPayment: number,
 ): number => {
   const principal = price - downPayment;
 
@@ -32,11 +32,11 @@ const createEmiPlans = (price: number) => {
   return [
     {
       tenureMonths: 6,
-           monthlyPayment: calculateMonthlyPayment(
+      monthlyPayment: calculateMonthlyPayment(
         price,
         6,
         0,
-        downPayment
+        downPayment,
       ),
       interestRate: 0,
       cashback: Math.round(price * 0.01),
@@ -48,7 +48,7 @@ const createEmiPlans = (price: number) => {
         price,
         9,
         0,
-        downPayment
+        downPayment,
       ),
       interestRate: 0,
       cashback: Math.round(price * 0.01),
@@ -60,7 +60,7 @@ const createEmiPlans = (price: number) => {
         price,
         12,
         10.5,
-        downPayment
+        downPayment,
       ),
       interestRate: 10.5,
       cashback: 0,
@@ -77,11 +77,13 @@ const products = [
     category: "Smartphones",
     description:
       "A premium smartphone featuring a powerful processor, advanced cameras and a high-resolution display.",
-    thumbnail:
-      "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=85",
+    thumbnail: "/products/iphone-17-pro.jpg",
     specifications: {
       Display: "6.3-inch Super Retina XDR",
       Processor: "Apple A-series Pro chip",
+      Camera: "Advanced Pro camera system",
+      Storage: "256 GB or 512 GB",
+      Connectivity: "5G, Wi-Fi and Bluetooth",
       Warranty: "1 year manufacturer warranty",
     },
     variants: [
@@ -91,9 +93,7 @@ const products = [
         storage: "256 GB",
         mrp: 139900,
         price: 134900,
-        images: [
-          "https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=1000&q=90",
-        ],
+        images: ["/products/iphone-17-pro.jpg"],
         stock: 15,
         emiPlans: createEmiPlans(134900),
       },
@@ -103,9 +103,7 @@ const products = [
         storage: "512 GB",
         mrp: 159900,
         price: 154900,
-        images: [
-          "https://images.unsplash.com/photo-1605236453806-6ff36851218e?auto=format&fit=crop&w=1000&q=90",
-        ],
+        images: ["/products/iphone-17-pro.jpg"],
         stock: 9,
         emiPlans: createEmiPlans(154900),
       },
@@ -119,11 +117,13 @@ const products = [
     category: "Smartphones",
     description:
       "A flagship Android smartphone with an immersive display, advanced camera system and S Pen support.",
-    thumbnail:
-      "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=800&q=85",
+    thumbnail: "/products/galaxy-s24-ultra.jpg",
     specifications: {
       Display: "6.8-inch Dynamic AMOLED",
       Processor: "Snapdragon flagship processor",
+      Camera: "Advanced multi-camera system",
+      Storage: "256 GB or 512 GB",
+      Features: "Built-in S Pen support",
       Warranty: "1 year manufacturer warranty",
     },
     variants: [
@@ -133,9 +133,7 @@ const products = [
         storage: "256 GB",
         mrp: 129999,
         price: 119999,
-        images: [
-          "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?auto=format&fit=crop&w=1000&q=90",
-        ],
+        images: ["/products/galaxy-s24-ultra.jpg"],
         stock: 18,
         emiPlans: createEmiPlans(119999),
       },
@@ -145,9 +143,7 @@ const products = [
         storage: "512 GB",
         mrp: 139999,
         price: 129999,
-        images: [
-          "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?auto=format&fit=crop&w=1000&q=90",
-        ],
+        images: ["/products/galaxy-s24-ultra.jpg"],
         stock: 11,
         emiPlans: createEmiPlans(129999),
       },
@@ -161,11 +157,13 @@ const products = [
     category: "Smartphones",
     description:
       "A Google flagship smartphone offering intelligent camera features, a clean Android experience and premium design.",
-    thumbnail:
-      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=85",
+    thumbnail: "/products/pixel-9-pro.jpg",
     specifications: {
       Display: "6.3-inch OLED display",
       Processor: "Google Tensor processor",
+      Camera: "AI-powered camera system",
+      Storage: "256 GB or 512 GB",
+      Software: "Android with Google AI features",
       Warranty: "1 year manufacturer warranty",
     },
     variants: [
@@ -175,9 +173,7 @@ const products = [
         storage: "256 GB",
         mrp: 114999,
         price: 109999,
-        images: [
-          "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1000&q=90",
-        ],
+        images: ["/products/pixel-9-pro.jpg"],
         stock: 14,
         emiPlans: createEmiPlans(109999),
       },
@@ -187,9 +183,7 @@ const products = [
         storage: "512 GB",
         mrp: 124999,
         price: 119999,
-        images: [
-          "https://images.unsplash.com/photo-1598327105666-5b89351aff97?auto=format&fit=crop&w=1000&q=90",
-        ],
+        images: ["/products/pixel-9-pro.jpg"],
         stock: 8,
         emiPlans: createEmiPlans(119999),
       },
@@ -209,11 +203,14 @@ const seedDatabase = async (): Promise<void> => {
         {
           upsert: true,
           runValidators: true,
-        }
+          new: true,
+        },
       );
     }
 
-    console.log(`${products.length} products seeded successfully`);
+    console.log(
+      `${products.length} products seeded successfully`,
+    );
   } catch (error) {
     console.error("Failed to seed products:", error);
     process.exitCode = 1;
